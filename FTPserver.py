@@ -3,7 +3,7 @@ import threading
 import os
 
 #Will require an input to change directories 
-def cd(newDirectory):
+def cd(newDirectory, socket):
     #change directory
     if os.path.isdir(newDirectory):
         os.chdir(newDirectory)
@@ -38,14 +38,29 @@ def get(name, socket):
 
 #Will prompt for a file to transfer to current working directory.
 def put(name, socket):
-
+    #What happens if the file exists?
+    if os.path.isfile(str.decode(name)):
+        null = name
+        #Need to prompt the user to change the name or cancel upload
+        #After we inform them that a file with that name already exists.
+    else:
+        null = name
+        #Need to go ahead and save the file from the user.
 
 #Will allow for multiple gets of several files. Must allow wildcard (*)
-def mget():
+def mget(names, socket):
+    #Seperate out all the names for the files
+    namesDict = names.split()
 
 
 #Will prompt user to send multiple files to the CWD
-def mput():
+def mput(names, socket):
+    namesDict = names.split()
+    for name in namesDict:
+        if os.path.isfile(name):
+            #Need to prompt the user about the error with the filename.
+            socket.send("ERR")
+
 
 
 #exits the program and closes the connection.
@@ -83,32 +98,37 @@ def main():
     while True:
         c, addr = s.accept()
         print("client connected ip:<" + str(addr) + ">")
-        cmd = socket.recv(1024)
+        cmd = s.recv(1024)
         
         if str.decode(cmd) == 'CD':
-            cd()
+            directory = s.recv(1024)
+            cd(directory, s)
 
         elif str.decode(cmd) == 'LS':
-            ls()
+            directory = '' #Current working directory.
+            ls(directory)
 
         elif str.decode(cmd) == 'GET':
-            filename = socket.recv(1024)
-            get(name, socket)
+            filename = s.recv(1024)
+            get(filename, socket)
 
         elif str.decode(cmd) == 'PUT':
-            put()
+            fileName = s.recv(1024)
+            put(fileName, s)
 
         elif str.decode(cmd) == 'MGET':
-            mget()
+            fileNames = s.recv(1024)
+            mget(fileNames, s)
 
         elif str.decode(cmd) == 'MPUT':
-            mput()
+            fileName = s.recv(1024)
+            mput(fileName, s)
 
         elif str.decode(cmd) == 'QUIT':
-            quit() 
+            quit(s) 
         
-        t = threading.Thread(target=RetrFile, args=("retrThread", c))
-        t.start()
+        #t = threading.Thread(target=RetrFile, args=("retrThread", c))
+        #t.start()
     s.close()
 
 if __name__ == '__main__':
