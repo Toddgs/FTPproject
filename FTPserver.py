@@ -8,13 +8,14 @@ def cd(newDirectory, socket):
     if os.path.isdir(newDirectory):
         os.chdir(newDirectory)
 
-
 #List all files and directories contained in current working directory
-def ls(currentDirectory):
-    os.listdir(currentDirectory)
+def ls(socket):
+    currentDirectory = ".\\"
+    directoryList = os.listdir(currentDirectory)
+    socket.send(directoryList)
 
 #Will require an input to change directories
-def dir(newDirectory):
+def dir(newDirectory, socket):
     if os.path.isdir(newDirectory):
         os.chdir(newDirectory)
 
@@ -35,7 +36,6 @@ def get(name, socket):
         socket.send("ERR")
     socket.close
 
-
 #Will prompt for a file to transfer to current working directory.
 def put(name, socket):
     #What happens if the file exists?
@@ -52,7 +52,6 @@ def mget(names, socket):
     #Seperate out all the names for the files
     namesDict = names.split()
 
-
 #Will prompt user to send multiple files to the CWD
 def mput(names, socket):
     namesDict = names.split()
@@ -60,8 +59,6 @@ def mput(names, socket):
         if os.path.isfile(name):
             #Need to prompt the user about the error with the filename.
             socket.send("ERR")
-
-
 
 #exits the program and closes the connection.
 def quit(socket):
@@ -99,14 +96,15 @@ def main():
         c, addr = s.accept()
         print("client connected ip:<" + str(addr) + ">")
         cmd = s.recv(1024)
+        cmd = cmd.lower
         
-        if str.decode(cmd) == 'CD':
+        if str.decode(cmd) == 'cd':
             directory = s.recv(1024)
             cd(directory, s)
 
-        elif str.decode(cmd) == 'LS':
-            directory = '' #Current working directory.
-            ls(directory)
+        elif str.decode(cmd) == 'ls':
+            #directory = '' #Current working directory.
+            ls(socket)
 
         elif str.decode(cmd) == 'GET':
             filename = s.recv(1024)
@@ -133,5 +131,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-        
-         
