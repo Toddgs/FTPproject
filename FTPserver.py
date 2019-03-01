@@ -1,4 +1,4 @@
-import socket
+import socket, pickle
 import threading
 import os
 
@@ -9,10 +9,12 @@ def cd(newDirectory, socket):
         os.chdir(newDirectory)
 
 #List all files and directories contained in current working directory
-def ls(socket):
-    currentDirectory = ".\\"
-    directoryList = os.listdir(currentDirectory)
-    socket.send(directoryList)
+def ls(s):
+    #s.send(str.encode(directoryList))
+    print("Picklin...")
+    data_string = pickle.dumps(os.listdir(".\\")) #we might be able to combine This line with the next one.
+    s.send(data_string)
+    print("Pickled!")
 
 #Will require an input to change directories
 def dir(newDirectory, socket):
@@ -92,37 +94,40 @@ def main():
     s.listen(5)
 
     print("Server Started.")
+    c, addr = s.accept()
+    print("client connected ip:<" + str(addr) + ">")
     while True:
-        c, addr = s.accept()
-        print("client connected ip:<" + str(addr) + ">")
-        cmd = s.recv(1024)
-        cmd = cmd.lower
         
-        if str.decode(cmd) == 'cd':
-            directory = s.recv(1024)
-            cd(directory, s)
+        cmd = str.decode(c.recv(1024))
+        #cmd = cmd.lower
+        print(cmd)
+        if cmd == 'cd':
+            directory = c.recv(1024)
+            cd(directory, c)
 
-        elif str.decode(cmd) == 'ls':
+        elif cmd == 'LS':
             #directory = '' #Current working directory.
-            ls(socket)
+            print("Entering LS")
+            ls(c)
+            print("Returned LS")
 
-        elif str.decode(cmd) == 'GET':
-            filename = s.recv(1024)
-            get(filename, socket)
+        elif cmd == 'GET':
+            filename = c.recv(1024)
+            get(filename, c)
 
-        elif str.decode(cmd) == 'PUT':
-            fileName = s.recv(1024)
-            put(fileName, s)
+        elif cmd == 'PUT':
+            fileName = c.recv(1024)
+            put(fileName, c)
 
-        elif str.decode(cmd) == 'MGET':
-            fileNames = s.recv(1024)
-            mget(fileNames, s)
+        elif cmd == 'MGET':
+            fileNames = c.recv(1024)
+            mget(fileNames, c)
 
-        elif str.decode(cmd) == 'MPUT':
-            fileName = s.recv(1024)
-            mput(fileName, s)
+        elif cmd == 'MPUT':
+            fileName = c.recv(1024)
+            mput(fileName, c)
 
-        elif str.decode(cmd) == 'QUIT':
+        elif cmd == 'QUIT':
             quit(s) 
         
         #t = threading.Thread(target=RetrFile, args=("retrThread", c))
