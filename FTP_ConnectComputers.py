@@ -1,6 +1,7 @@
 import socket 
 import pickle
 import optparse #This is used to parse console input -TS
+import string
 # import threading                                      # used in server 
 # get input from user 
 
@@ -8,7 +9,7 @@ import optparse #This is used to parse console input -TS
 
 
 def ls(socket):
-    socket.send(str.encode('LS'))                       # sends the requested command in bytes
+    socket.send(str.encode('LS'))                       # sends the requested commandInput in bytes
     data = socket.recv(1024)
     bytesRecv = pickle.loads(data)
          
@@ -47,17 +48,17 @@ def get(socket):
         socket.send('QUIT')
         quit(socket)
 
-def put(socket):
+def putFile(socket):
     print("PUT!")
 
 
-def mget(socket):
+def multiget(socket):
     print("MGET!")
 
-def mput(socket):
+def multiput(socket):
     print("MPUT!")
 
-def cd(socket):
+def changeDir(socket):
     print("CD!")
 
 def quit(socket):
@@ -74,37 +75,39 @@ def Main():
                              # This connects to the server
     
     
+    #cmd = input(">")
 
-
-    s.connect((host,port))     
+    #s.connect((host,port))     
     while True:
-        cmd = input()
-        if cmd.lower == "ls":
+        commandInput = str(input(">"))
+        
+        
+        if commandInput == "ls":
             lis = ls(s)
             print(lis)
 
-        if cmd.lower == "get":
+        if commandInput == "get":
             get(s)
 
-        if cmd.lower == "cd":
-            cd(s)
+        if commandInput == "cd":
+            changeDir(s)
         
-        if cmd.lower == "dir":
+        if commandInput == "dir":
             ls(s)
 
-        if cmd.lower == "get":
+        if commandInput == "get":
             get(s)
 
-        if cmd.lower == "put":
-            put(s)
+        if commandInput == "put":
+            putFile(s)
 
-        if cmd.lower == "mget":
-            mget(s)
+        if commandInput == "mget\n":
+            multiget(s)
         
-        if cmd.lower == "mput": 
-            mput(s)
+        if commandInput == "mput": 
+            multiput(s)
 
-        if cmd.lower == "quit":
+        if commandInput == "quit":
             quit(s)
     
 
