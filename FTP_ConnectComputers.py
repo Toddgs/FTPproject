@@ -1,5 +1,6 @@
 import socket 
 import pickle
+import optparse #This is used to parse console input -TS
 # import threading                                      # used in server 
 # get input from user 
 
@@ -46,15 +47,18 @@ def get(socket):
         socket.send('QUIT')
         quit(socket)
 
-#def put(socket):
+def put(socket):
+    print("PUT!")
 
 
+def mget(socket):
+    print("MGET!")
 
-#def mget(socket):
+def mput(socket):
+    print("MPUT!")
 
-
-#def mput(socket):
-
+def cd(socket):
+    print("CD!")
 
 def quit(socket):
     socket.close()
@@ -67,12 +71,42 @@ def Main():
     port  = 5000                                        # actual port 
 
     s = socket.socket()                                 # creates the "port" we use to connect
-    s.connect((host,port))                              # This connects to the server
+                             # This connects to the server
     
-    lis = ls(s)
-    print(lis)
+    
 
-    quit(s)
+
+    s.connect((host,port))     
+    while True:
+        cmd = input()
+        if cmd.lower == "ls":
+            lis = ls(s)
+            print(lis)
+
+        if cmd.lower == "get":
+            get(s)
+
+        if cmd.lower == "cd":
+            cd(s)
+        
+        if cmd.lower == "dir":
+            ls(s)
+
+        if cmd.lower == "get":
+            get(s)
+
+        if cmd.lower == "put":
+            put(s)
+
+        if cmd.lower == "mget":
+            mget(s)
+        
+        if cmd.lower == "mput": 
+            mput(s)
+
+        if cmd.lower == "quit":
+            quit(s)
+    
 
 
 if __name__ == '__main__':

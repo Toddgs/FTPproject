@@ -67,6 +67,13 @@ def quit(socket):
     socket.send("GOODBYE")
     socket.close
 
+def login(socket):
+    socket.send("LOGIN")
+    userName = socket.recv(1024)
+    password = socket.recv(1024)
+    print("Username: " + userName + " Password: " + password)
+
+
 
 """ def RetrFile(name, socket):
     filename = socket.recv(1024)
@@ -95,7 +102,10 @@ def main():
 
     print("Server Started.")
     c, addr = s.accept()
+    
     print("client connected ip:<" + str(addr) + ">")
+    login(c)
+    
     while True:
         
         cmd = str.decode(c.recv(1024))
