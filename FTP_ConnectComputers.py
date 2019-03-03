@@ -34,7 +34,7 @@ def get(socket):
                 socket.send(str.encode('OK'))           # sends back string response
                 f = open('new' + filename, 'wb')        # makes file with the word new infront 
                 data = socket.recv(1024)
-                totalRecv =len(data)
+                totalRecv = len(data)
                 f.write(data)
                 while totalRecv < int(filesize):
                     data = set.recv(1024)
@@ -67,8 +67,8 @@ def quit(socket):
 
 
 def Main():
-    #host = input("Enter the IP address of your server: ")
-    host = "169.254.145.232"                            # Todd's IP address, Personal IP: 10.20.120.61
+    host = raw_input("Enter the IP address of your server: ") #Newer versions of python will have to use input
+    #host = "169.254.145.232"                            # Todd's IP address, Personal IP: 10.20.120.61
     port  = 5000                                        # actual port 
 
     s = socket.socket()                                 # creates the "port" we use to connect
@@ -77,10 +77,21 @@ def Main():
     
     #cmd = input(">")
 
-    #s.connect((host,port))     
+    s.connect((host,port))     
+    login = str.decode(s.recv(1024))
+    if login == "LOGIN":
+        loginName = raw_input("Please enter username: ")
+        if loginName == "anon":
+            loginEmail = raw_input("Please enter your e-mail: ")
+            loginInfo = [loginName, loginEmail]
+        else:
+            password = raw_input("Please enter your password: ")
+            loginInfo = [loginName, password]
+        data = pickle.dumps(loginInfo)
+        s.send(data)
+
     while True:
-        commandInput = str(input(">"))
-        
+        commandInput = raw_input(">") #Newer versions of python will have to use input
         
         if commandInput == "ls":
             lis = ls(s)
@@ -101,7 +112,7 @@ def Main():
         if commandInput == "put":
             putFile(s)
 
-        if commandInput == "mget\n":
+        if commandInput == "mget":
             multiget(s)
         
         if commandInput == "mput": 
