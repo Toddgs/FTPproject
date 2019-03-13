@@ -67,7 +67,7 @@ def quit(socket):
 
 
 def Main():
-    host = raw_input("Enter the IP address of your server: ") #Newer versions of python will have to use input
+    host = input("Enter the IP address of your server: ") #Newer versions of python will have to use input
     #host = "169.254.145.232"                            # Todd's IP address, Personal IP: 10.20.120.61
     port  = 5000                                        # actual port 
 
@@ -80,18 +80,18 @@ def Main():
     s.connect((host,port))     
     login = str.decode(s.recv(1024))
     if login == "LOGIN":
-        loginName = raw_input("Please enter username: ")
+        loginName = input("Please enter username: ")
         if loginName == "anon":
-            loginEmail = raw_input("Please enter your e-mail: ")
+            loginEmail = input("Please enter your e-mail: ")
             loginInfo = [loginName, loginEmail]
         else:
-            password = raw_input("Please enter your password: ")
+            password = input("Please enter your password: ")
             loginInfo = [loginName, password]
         data = pickle.dumps(loginInfo)
         s.send(data)
 
     while True:
-        commandInput = raw_input(">") #Newer versions of python will have to use input
+        commandInput = input(">") #Newer versions of python will have to use input
         
         if commandInput == "ls":
             lis = ls(s)

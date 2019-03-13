@@ -20,19 +20,21 @@ def dir(newDirectory, socket):
 
 #Will take an input to retrieve a file. 
 def get(name, socket):
-    
-    if os.path.isfile(str.decode(name)):
-        #socket.send('EXISTS' + str(os.path.getsize(filename)))
-        #userResponse = socket.recv(1024)
-        #if userResponse[:2] == 'OK':
+    print os.path.isfile(name)
+    if os.path.isfile(name):
         with open(name, 'rb') as f: #Opens the file with the specified name
             bytesToSend = f.read(1024) #Reads the first section of data to be sent.
             socket.send(bytesToSend) #Sends the data.
+            print "Entering Loop to send"
             while bytesToSend != '': #Checks to see if the data is empty
                 bytesToSend = f.read(1024) #If not, sends more data.
                 socket.send(bytesToSend)
+                print "loopin"
+            print "exited loop!"
     else:
-        socket.send("ERROR:File doesn't exist") #Sends an error message.
+        print "ERROR MSG"
+        errorMsg = pickle.dumps("ERROR:File doesn't exist")
+        socket.send(errorMsg) #Sends an error message.
     socket.close #Closes the socket 
 
 def put(name, socket): #Will prompt for a file to transfer to current working directory.
@@ -61,9 +63,10 @@ def quit(socket): #Exits the program and closes the connection.
 
 def login(socket): #Login function, user must login or be booted.
     numberOfTries = 0 #Variable to count the number of attempts.
-    socket.send("LOGIN") #Tell the client that we are attempting to log in
-    data = socket.recv(1024) #Open the socket to receive data.
-    userData = pickle.loads(data) #Unload the pickled data. 
+    login = pickle.dumps("LOGIN")
+    socket.send(login) #Tell the client that we are attempting to log in
+    data = pickle.loads(socket.recv(1024)) #Open the socket to receive data.
+    userData = data #Unload the pickled data. 
     if userData[0] == "" and numberOfTries != 3: #While the number of login attempts is less than 3. 
         socket.send("LOGIN") # THIS FUNCTION NEEDS TO BE UPDATED AND CHANGED TO A WHILE LOOP
         numberOfTries += 1
@@ -75,7 +78,7 @@ def login(socket): #Login function, user must login or be booted.
         print("Username: " + userData[0] + " Password: " + userData[1]) #Prints the users login information.
 
 def main(): #Main function.
-    host = '10.0.0.22' #'169.254.145.232'
+    host = '169.254.145.232' 
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
@@ -89,37 +92,37 @@ def main(): #Main function.
     login(c) #Go into the login function. If they fail they will be logged out.
     
     while True:
-        cmd = str.decode(c.recv(1024)) #Get the cmd data from the client.
-        #cmd = cmd.lower
+        cmd = pickle.loads(c.recv(1024)) #Get the cmd data from the client.
         print(cmd) #Prints the command the user entered. 
         
-        if cmd == 'cd':
+        if cmd[:2] == 'cd':
             directory = c.recv(1024) 
             cd(directory, c)
 
-        elif cmd == 'ls':
+        elif cmd[:2] == 'ls':
             #directory = '' #Current working directory.
-            print("Entering LS")
+            #print("Entering LS")
             ls(c)
-            print("Returned LS")
+            #print("Returned LS")
 
-        elif cmd == 'get':
-            filename = c.recv(1024)
-            get(filename, c)
+        elif cmd[:3] == 'get':
+            #filename = c.recv(1024)
+            print cmd[4:]
+            get(cmd[4:], c)
 
-        elif cmd == 'put':
+        elif cmd[:3] == 'put':
             fileName = c.recv(1024)
             put(fileName, c)
 
-        elif cmd == 'mget':
+        elif cmd[:4] == 'mget':
             fileNames = c.recv(1024)
             mget(fileNames, c)
 
-        elif cmd == 'mput':
+        elif cmd[:4] == 'mput':
             fileName = c.recv(1024)
             mput(fileName, c)
 
-        elif cmd == 'quit':
+        elif cmd[:4] == 'quit':
             quit(s) 
         
         #t = threading.Thread(target=RetrFile, args=("retrThread", c))
