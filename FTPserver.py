@@ -37,14 +37,28 @@ def get(name, socket):
         socket.send(errorMsg) #Sends an error message.
     socket.close #Closes the socket 
 
-def put(name, socket): #Will prompt for a file to transfer to current working directory.
+def put(cmd, socket): #Will prompt for a file to transfer to current working directory.
+    
+    name = cmd[3:]
+    filesize = socket.recv(1024)
+    if filesize:
+        socket.send(True)
+        f = open('new' + filename, 'wb')        # makes file with the word new infront 
+        data = socket.recv(1024)
+        totalRecv = len(data)
+        f.write(data)
+        while totalRecv < int(filesize):
+            data = set.recv(1024)
+            totalRecv += len(data)
+            f.write(data)
+            print ("{0:.2f}".format((totalRecv/float(filesize))*100+"% Done"))
     #What happens if the file exists?
-    if os.path.isfile(str.decode(name)):
-        null = name
+    #if os.path.isfile(str.decode(name)):
+     #   null = name
         #Need to prompt the user to change the name or cancel upload
         #After we inform them that a file with that name already exists.
-    else:
-        null = name
+    #else:
+    #    null = name
         #Need to go ahead and save the file from the user.
 
 #Will allow for multiple gets of several files. Must allow wildcard (*)
@@ -112,6 +126,7 @@ def main(): #Main function.
 
         elif cmd[:3] == 'put':
             fileName = c.recv(1024)
+            socket.send(True)
             put(fileName, c)
 
         elif cmd[:4] == 'mget':

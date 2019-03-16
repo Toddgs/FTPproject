@@ -49,9 +49,26 @@ def get(socket):
         socket.send('QUIT')
         quit(socket)
 
-def putFile(socket):
-    print("PUT!")
+def putFile(socket, cmd): #This function needs to put a file from the local machine to the server.
+    tempName = cmd[3:]
+    
+    if os.path.isfile(tempName): #Checks to see if the file exists.
+        print('do stuff')
+        socket.send(cmd)
+        success = socket.recv(1024)
+        if success:
+            socket.send(os.path.getsize(tempName))
+            success = socket.recv(1024)
+            if success:
+                with open(tempName, 'rb') as f:
+                    bytesToSend = f.read(1024)
+                    socket.send(bytesToSend)
+                    while bytesToSend != '':
+                        bytesToSend = f.read(1024)
+                        socket.send(bytesToSend)
 
+    else:
+        print("ERROR: Filename not valid.")
 
 def multiget(socket):
     print("MGET!")
