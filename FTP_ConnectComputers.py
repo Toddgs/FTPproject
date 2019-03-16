@@ -67,8 +67,7 @@ def quit(socket):
 
 
 def Main():
-    #host = raw_input("Enter the IP address of your server: ") #Newer versions of python will have to use input
-    host = "169.254.145.232"                            # Todd's IP address, Personal IP: 10.20.120.61
+
     port  = 5000                                        # actual port 
 
     s = socket.socket()                                 # creates the "port" we use to connect
