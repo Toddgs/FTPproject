@@ -78,7 +78,7 @@ def login(socket): #Login function, user must login or be booted.
         print("Username: " + userData[0] + " Password: " + userData[1]) #Prints the users login information.
 
 def main(): #Main function.
-    host = '169.254.145.232' 
+    host = '10.0.0.30' #169.254.145.232' 
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
