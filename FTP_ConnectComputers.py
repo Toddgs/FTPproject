@@ -2,6 +2,7 @@ import socket
 import pickle
 import optparse #This is used to parse console input -TS
 import string
+import os
 # import threading                                      # used in server 
 # get input from user 
 
@@ -68,6 +69,7 @@ def quit(socket):
 
 def Main():
 
+    host = '10.0.0.30'
     port  = 5000                                        # actual port 
 
     s = socket.socket()                                 # creates the "port" we use to connect
@@ -77,47 +79,51 @@ def Main():
     #cmd = input(">")
 
     s.connect((host,port))     
-    login = str.decode(s.recv(1024))
+    login = str(s.recv(1024))
     if login == "LOGIN":
-        loginName = raw_input("Please enter username: ")
+        loginName = input("Please enter username: ")
         if loginName == "anon":
-            loginEmail = raw_input("Please enter your e-mail: ")
+            loginEmail = input("Please enter your e-mail: ")
             loginInfo = [loginName, loginEmail]
         else:
-            password = raw_input("Please enter your password: ")
+            password = input("Please enter your password: ")
             loginInfo = [loginName, password]
         data = pickle.dumps(loginInfo)
         s.send(data)
 
     while True:
-        commandInput = raw_input(">") #Newer versions of python will have to use input
+        commandInput = input(">") #Newer versions of python will have to use input
         
-        if commandInput == "ls":
+        if commandInput[:2] == "ls":
             lis = ls(s)
             print(lis)
 
-        if commandInput == "get":
+        if commandInput[:3] == "get":
             get(s)
 
-        if commandInput == "cd":
+        if commandInput[:2] == "cd":
             changeDir(s)
         
-        if commandInput == "dir":
+        if commandInput[:3] == "dir":
             ls(s)
 
-        if commandInput == "get":
+        if commandInput[:3] == "get":
             get(s)
 
-        if commandInput == "put":
+        if commandInput[:3] == "put":
             putFile(s)
 
-        if commandInput == "mget":
+        if commandInput[:4] == "mget":
             multiget(s)
         
-        if commandInput == "mput": 
+        if commandInput[:4] == "mput": 
             multiput(s)
 
-        if commandInput == "quit":
+        if commandInput[:3] == 'lcd':
+            dirList = os.listdir(".\\")
+            print ('My list:', *dirList, sep='\n')
+        
+        if commandInput[:4] == "quit":
             quit(s)
     
 

@@ -122,6 +122,8 @@ def main(): #Main function.
             fileName = c.recv(1024)
             mput(fileName, c)
 
+        
+
         elif cmd[:4] == 'quit':
             quit(s) 
         
