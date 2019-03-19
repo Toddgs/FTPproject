@@ -1,53 +1,51 @@
-import socket 
+import socket
 import pickle
-import optparse #This is used to parse console input -TS
+import optparse                                         # This is used to parse console input
 import string
 import os
-# import threading                                      # used in server 
-# get input from user 
 
-#def cd(newDirectory, socket):
+# import threading                                      # used in server
 
+ 
+
+def cd(newDirectory, socket):
+    socket.send(pickle.dumps('cd', protocol=2))
 
 def ls(socket):
-    socket.send(str.encode('LS'))                       # sends the requested commandInput in bytes
-    data = socket.recv(1024)
-    bytesRecv = pickle.loads(data)
-         
-    print('Recv')
+    socket.send(pickle.dumps('ls', protocol=2))                                                           
+    bytesRecv = pickle.loads(socket.recv(1024))                                         
     return bytesRecv
 
 def dir(newDirectory, socket):
-    socket.send(str.encode('LS'))                       # sends the requested file name in bytes
-    dirc = socket.recv(1024)                            # accepts anything sent by server 
-    return dirc.decode('utf-8') 
+    cmd = pickle.dumps('dir', protocol=2)
+    socket.send(cmd)                                  
+    data = socket.recv(1024)                           
+    bytesRecv = pickle.loads(data)                        
+    return bytesRecv
 
-def get(socket):                                        
-    filename = input("filename?")                       # gets file desired from client
-    if filename != 'quit':                              # 'q' is the indication that the client would like to quit and no longer get a file
-        socket.send(str.encode(filename))               # sends the requested file name in bytes
-        data = socket.recv(1024)                        # accepts anything sent by server         low key limited to 1018 size file       
-        data = data.decode('utf-8')                     # special decode from the string 
-        if data[:6] == 'EXISTS':
-            filesize = data[6:]
-            message = input("File exists, " + filesize + "Bytes, download? (Y/N)")
-            if message == 'Y':                          # do a more specific check to verify that the user is saying yes i.e Y, y, yes, Yes, etc.
-                socket.send(str.encode('OK'))           # sends back string response
-                f = open('new' + filename, 'wb')        # makes file with the word new infront 
-                data = socket.recv(1024)
-                totalRecv = len(data)
-                f.write(data)
-                while totalRecv < int(filesize):
-                    data = set.recv(1024)
-                    totalRecv += len(data)
-                    f.write(data)
-                    print ("{0:.2f}".format((totalRecv/float(filesize))*100+"% Done"))
-                print ("Download Complete!") 
-        else:
-            print ("File does not Exist!")
-    elif filename == 'quit':                            # enters into disconnecting sequence
-        socket.send('QUIT')
-        quit(socket)
+def get(command, socket):   
+    cmd = pickle.dumps(command,protocol=2)
+    socket.send(cmd)
+    print ('sent cmd')
+    f = open('new_' + command[4:], 'wb')
+    data = b''
+    while True:                              ##################################################
+        packet = socket.recv(1024)
+        print('recv1')
+        if packet == '': break
+        data += packet
+        packet = ''
+        print ('try for mor')
+    print ('exit 1st while')
+    message = pickle.loads(data)
+    if  message[:5] == "ERROR":
+        print(pickle.loads(data))
+        return
+    while (data != ''):
+        print('while')
+        f.write(data)
+        data = socket.recv(1024)
+        print('recv')
 
 def putFile(socket, cmd): #This function needs to put a file from the local machine to the server.
     tempName = cmd[3:]
@@ -71,79 +69,81 @@ def putFile(socket, cmd): #This function needs to put a file from the local mach
         print("ERROR: Filename not valid.")
 
 def multiget(socket):
-    print("MGET!")
+    cmd = pickle.dumps('mget', protocol=2)
+    socket.send(cmd)                                   
+    data = socket.recv(1024)                           
+    bytesRecv = pickle.loads(data)                                         
+    return bytesRecv
 
 def multiput(socket):
-    print("MPUT!")
-
+    cmd = pickle.dumps('mput',protocol=2)
+    socket.send(cmd)                                   
+    data = socket.recv(1024)                         
+    bytesRecv = pickle.loads(data)                                   
+    return bytesRecv
+ 
 def changeDir(socket):
-    print("CD!")
+    cmd = pickle.dumps('cd',protocol=2)
+    socket.send(cmd)                                  
+    data = socket.recv(1024)                          
+    bytesRecv = pickle.loads(data)                                         
+    return bytesRecv
 
 def quit(socket):
     socket.close()
 
-
-
-def Main():
-
-    host = '10.0.0.30'
-    port  = 5000                                        # actual port 
-
+def Main():#host = input("Enter the IP address of your server: ") # older versions of python will have to use raw_input
+    host = "169.254.145.232"                    # Todd's IP address, Personal IP: 10.20.120.61
+    port  = 5000                                        # actual port
+ 
     s = socket.socket()                                 # creates the "port" we use to connect
-                             # This connects to the server
-    
-    
-    #cmd = input(">")
 
-    s.connect((host,port))     
-    login = str(s.recv(1024))
+    s.connect((host,port))                              # This connects to the server
+    login = pickle.loads(s.recv(1024))          # Promted by server imedeately after connection
     if login == "LOGIN":
-        loginName = input("Please enter username: ")
+        loginName = input("Please enter username: ")# Prompt to see if account isalreadycreated
         if loginName == "anon":
             loginEmail = input("Please enter your e-mail: ")
             loginInfo = [loginName, loginEmail]
         else:
             password = input("Please enter your password: ")
             loginInfo = [loginName, password]
-        data = pickle.dumps(loginInfo)
+        data = pickle.dumps(loginInfo, protocol=2)
         s.send(data)
-
     while True:
-        commandInput = input(">") #Newer versions of python will have to use input
-        
+        commandInput = input(">")                      
+
         if commandInput[:2] == "ls":
             lis = ls(s)
             print(lis)
 
-        if commandInput[:3] == "get":
-            get(s)
-
         if commandInput[:2] == "cd":
-            changeDir(s)
-        
+            newDirectory = input("Name of Directory?")                      
+            if newDirectory != 'quit':                             
+                directory = cd(newDirectory, s)
+
         if commandInput[:3] == "dir":
             ls(s)
-
+ 
         if commandInput[:3] == "get":
-            get(s)
+            get(commandInput, s)
 
         if commandInput[:3] == "put":
             putFile(s)
 
         if commandInput[:4] == "mget":
             multiget(s)
-        
-        if commandInput[:4] == "mput": 
+
+        if commandInput[:4] == "mput":
             multiput(s)
 
         if commandInput[:3] == 'lcd':
             dirList = os.listdir(".\\")
             print ('My list:', *dirList, sep='\n')
-        
+
         if commandInput[:4] == "quit":
             quit(s)
-    
-
+            exit()
 
 if __name__ == '__main__':
     Main()
