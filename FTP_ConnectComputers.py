@@ -26,27 +26,13 @@ def dir(newDirectory, socket):
 def get(command, socket):   
     cmd = pickle.dumps(command,protocol=2)
     socket.send(cmd)
-    print ('sent cmd')
     f = open('new_' + command[4:], 'wb')
     data = b''
     while True:                              ##################################################
         packet = socket.recv(1024)
-        print('recv1')
-        if packet == '': break
-        data += packet
-        packet = ''
-        print ('try for mor')
-    print ('exit 1st while')
-    message = pickle.loads(data)
-    if  message[:5] == "ERROR":
-        print(pickle.loads(data))
-        return
-    while (data != ''):
-        print('while')
-        f.write(data)
-        data = socket.recv(1024)
-        print('recv')
-
+        if packet == b'END': break
+        f.write(packet)
+        
 def putFile(socket, cmd): #This function needs to put a file from the local machine to the server.
     tempName = cmd[3:]
     
@@ -68,16 +54,16 @@ def putFile(socket, cmd): #This function needs to put a file from the local mach
     else:
         print("ERROR: Filename not valid.")
 
-def multiget(socket):
-    cmd = pickle.dumps('mget', protocol=2)
+def multiget(cmd, socket):
+    #cmd = pickle.dumps('mget', protocol=2)
     socket.send(cmd)                                   
     data = socket.recv(1024)                           
     bytesRecv = pickle.loads(data)                                         
     return bytesRecv
 
 def multiput(socket):
-    cmd = pickle.dumps('mput',protocol=2)
-    socket.send(cmd)                                   
+    #cmd = pickle.dumps('mput',protocol=2)
+    socket.send(b'mput')                                   
     data = socket.recv(1024)                         
     bytesRecv = pickle.loads(data)                                   
     return bytesRecv
@@ -93,7 +79,7 @@ def quit(socket):
     socket.close()
 
 def Main():#host = input("Enter the IP address of your server: ") # older versions of python will have to use raw_input
-    host = "169.254.145.232"                    # Todd's IP address, Personal IP: 10.20.120.61
+    host = "10.0.0.21"                    # Todd's IP address, Personal IP: 10.20.120.61
     port  = 5000                                        # actual port
  
     s = socket.socket()                                 # creates the "port" we use to connect
@@ -132,7 +118,7 @@ def Main():#host = input("Enter the IP address of your server: ") # older versio
             putFile(s)
 
         if commandInput[:4] == "mget":
-            multiget(s)
+            multiget(commandInput[5:], s)
 
         if commandInput[:4] == "mput":
             multiput(s)
