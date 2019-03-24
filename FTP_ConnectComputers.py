@@ -24,13 +24,17 @@ def dir(newDirectory, socket):
     return bytesRecv
 
 def get(command, socket):   
+    
     cmd = pickle.dumps(command,protocol=2)
     socket.send(cmd)
+    fileSize = socket.recv(1024)
+    fileSize = pickle.loads(fileSize)
     f = open('new_' + command[4:], 'wb')
-    data = b''
-    while True:                              ##################################################
+    sizeRecv = 0
+    print(fileSize)
+    while sizeRecv < fileSize:                              ##################################################
         packet = socket.recv(1024)
-        if packet == b'END': break
+        sizeRecv += len(packet)
         f.write(packet)
         
 def putFile(socket, cmd): #This function needs to put a file from the local machine to the server.
@@ -55,11 +59,9 @@ def putFile(socket, cmd): #This function needs to put a file from the local mach
         print("ERROR: Filename not valid.")
 
 def multiget(cmd, socket):
-    #cmd = pickle.dumps('mget', protocol=2)
-    socket.send(cmd)                                   
-    data = socket.recv(1024)                           
-    bytesRecv = pickle.loads(data)                                         
-    return bytesRecv
+    names = cmd.split(' ')
+    for name in names:
+        get('get ' + name, socket)
 
 def multiput(socket):
     #cmd = pickle.dumps('mput',protocol=2)
