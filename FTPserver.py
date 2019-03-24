@@ -21,33 +21,39 @@ def dir(newDirectory, socket):
 #Will take an input to retrieve a file. 
 def get(name, socket):
     if os.path.isfile(name):
+        size = pickle.dumps(os.path.getsize(name))
+        socket.send(size)
         with open(name, 'rb') as f: #Opens the file with the specified name
             bytesToSend = f.read(1024) #Reads the first section of data to be sent.
             while bytesToSend != b'': #Checks to see if the data is empty
                 socket.send(bytesToSend)
                 bytesToSend = f.read(1024) #If not, sends more data.
-            socket.send(b'END')
+        #socket.send(b'END')
     else:
         print("ERROR MSG")
         errorMsg = pickle.dumps("ERROR:File doesn't exist")
         socket.send(errorMsg) #Sends an error message.
     socket.close #Closes the socket 
 
-def put(cmd, socket): #Will prompt for a file to transfer to current working directory.
-    
+def put(cmd, sock): #Will prompt for a file to transfer to current working directory.
+    pickleTrue = pickle.dumps(True)
     name = cmd[3:]
-    filesize = socket.recv(1024)
+    print(cmd)
+    filesize = sock.recv(1024)
+    filesize = pickle.loads(filesize)
+    print(filesize)
     if filesize:
-        socket.send(True)
-        f = open('new' + filename, 'wb')        # makes file with the word new infront 
-        data = socket.recv(1024)
+        print("entered if")
+        sock.send(pickleTrue)
+        f = open('new_' + name, 'wb')        # makes file with the word new infront 
+        data = sock.recv(1024)
         totalRecv = len(data)
         f.write(data)
-        while totalRecv < int(filesize):
-            data = set.recv(1024)
+        while totalRecv < filesize:
+            data = sock.recv(1024)
             totalRecv += len(data)
             f.write(data)
-            print ("{0:.2f}".format((totalRecv/float(filesize))*100+"% Done"))
+            print (str("{0:.2f}".format((totalRecv/float(filesize))*100)+"% Done"))
     #What happens if the file exists?
     #if os.path.isfile(str.decode(name)):
      #   null = name
@@ -94,7 +100,7 @@ def main(): #Main function.
     s.bind((host,port)) #Bind the information to the socket object.
     cmd = ''
     s.listen(5) #A timeout for the listen. Will likely not need this in the final code.
-
+    
     print("Server Started.")
     c, addr = s.accept() #Waits and accepts outside connections.
     
@@ -121,9 +127,9 @@ def main(): #Main function.
             get(cmd[4:], c)
 
         elif cmd[:3] == 'put':
-            fileName = c.recv(1024)
-            socket.send(True)
-            put(fileName, c)
+            #fileName = c.recv(1024)
+            #s.send(pickleTrue)
+            put(cmd, c)
 
         elif cmd[:4] == 'mget':
             fileNames = c.recv(1024)
