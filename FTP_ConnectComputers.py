@@ -3,7 +3,7 @@ import pickle
 import optparse                                         # This is used to parse console input
 import string
 import os
-
+import time
 # import threading                                      # used in server
 
  
@@ -38,22 +38,27 @@ def get(command, socket):
         f.write(packet)
         
 def putFile(socket, cmd): #This function needs to put a file from the local machine to the server.
-    tempName = cmd[3:]
+    tempName = cmd[4:]
     
     if os.path.isfile(tempName): #Checks to see if the file exists.
         print('do stuff')
+        cmd = pickle.dumps(cmd)
         socket.send(cmd)
+        time.sleep(0.1)
+        print(os.path.getsize(tempName))
+        size = pickle.dumps(os.path.getsize(tempName))
+        socket.send(size)
+        print("size sent")
         success = socket.recv(1024)
+        print("Received success")
         if success:
-            socket.send(os.path.getsize(tempName))
-            success = socket.recv(1024)
-            if success:
-                with open(tempName, 'rb') as f:
+            print("entered 2nd if")
+            with open(tempName, 'rb') as f:
+                bytesToSend = f.read(1024)
+                socket.send(bytesToSend)
+                while bytesToSend != '':
                     bytesToSend = f.read(1024)
                     socket.send(bytesToSend)
-                    while bytesToSend != '':
-                        bytesToSend = f.read(1024)
-                        socket.send(bytesToSend)
 
     else:
         print("ERROR: Filename not valid.")
@@ -117,7 +122,7 @@ def Main():#host = input("Enter the IP address of your server: ") # older versio
             get(commandInput, s)
 
         if commandInput[:3] == "put":
-            putFile(s)
+            putFile(s, commandInput)
 
         if commandInput[:4] == "mget":
             multiget(commandInput[5:], s)
