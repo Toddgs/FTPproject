@@ -20,19 +20,12 @@ def dir(newDirectory, socket):
 
 #Will take an input to retrieve a file. 
 def get(name, socket):
-    #print os.path.isfile(name)
     if os.path.isfile(name):
         with open(name, 'rb') as f: #Opens the file with the specified name
             bytesToSend = f.read(1024) #Reads the first section of data to be sent.
-            #socket.send(bytesToSend) #Sends the data.
-            print("Entering Loop to send")
-            loop = 0
             while bytesToSend != b'': #Checks to see if the data is empty
-                
                 socket.send(bytesToSend)
-                print(bytesToSend)
                 bytesToSend = f.read(1024) #If not, sends more data.
-            print("exited loop!")
             socket.send(b'END')
     else:
         print("ERROR MSG")
