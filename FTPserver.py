@@ -20,19 +20,15 @@ def dir(newDirectory, socket):
 
 #Will take an input to retrieve a file. 
 def get(name, socket):
-    print os.path.isfile(name)
     if os.path.isfile(name):
         with open(name, 'rb') as f: #Opens the file with the specified name
             bytesToSend = f.read(1024) #Reads the first section of data to be sent.
-            socket.send(bytesToSend) #Sends the data.
-            print "Entering Loop to send"
-            while bytesToSend != '': #Checks to see if the data is empty
-                bytesToSend = f.read(1024) #If not, sends more data.
+            while bytesToSend != b'': #Checks to see if the data is empty
                 socket.send(bytesToSend)
-                print "loopin"
-            print "exited loop!"
+                bytesToSend = f.read(1024) #If not, sends more data.
+            socket.send(b'END')
     else:
-        print "ERROR MSG"
+        print("ERROR MSG")
         errorMsg = pickle.dumps("ERROR:File doesn't exist")
         socket.send(errorMsg) #Sends an error message.
     socket.close #Closes the socket 
@@ -121,7 +117,7 @@ def main(): #Main function.
 
         elif cmd[:3] == 'get':
             #filename = c.recv(1024)
-            print cmd[4:]
+            print(cmd[4:])
             get(cmd[4:], c)
 
         elif cmd[:3] == 'put':
