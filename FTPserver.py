@@ -21,14 +21,13 @@ def dir(newDirectory, socket):
 #Will take an input to retrieve a file. 
 def get(name, socket):
     if os.path.isfile(name):
-        size = pickle.dumps(os.path.getsize(name))
+        size = pickle.dumps(os.path.getsize(name)) #takes the size of the named file and puts it into a pickled format.
         socket.send(size)
         with open(name, 'rb') as f: #Opens the file with the specified name
             bytesToSend = f.read(1024) #Reads the first section of data to be sent.
             while bytesToSend != b'': #Checks to see if the data is empty
                 socket.send(bytesToSend)
                 bytesToSend = f.read(1024) #If not, sends more data.
-        #socket.send(b'END')
     else:
         print("ERROR MSG")
         errorMsg = pickle.dumps("ERROR:File doesn't exist")
@@ -36,21 +35,21 @@ def get(name, socket):
     socket.close #Closes the socket 
 
 def put(cmd, sock): #Will prompt for a file to transfer to current working directory.
-    pickleTrue = pickle.dumps(True)
-    name = cmd[3:]
+    pickleTrue = pickle.dumps(True) #Prepares a true statement to be sent to the client.
+    name = cmd[3:] #Pulls the name from the cmd variable.
     print(cmd)
     filesize = sock.recv(1024)
     filesize = pickle.loads(filesize)
     print(filesize)
-    if filesize:
+    if filesize: #If filesize exists, enter this statement.
         print("entered if")
-        sock.send(pickleTrue)
+        sock.send(pickleTrue) #Send a confirmation that the statement passed and we entered the if statement.
         f = open('new_' + name, 'wb')        # makes file with the word new infront 
         data = sock.recv(1024)
-        totalRecv = len(data)
-        f.write(data)
-        while totalRecv < filesize:
-            data = sock.recv(1024)
+        totalRecv = len(data) #Sets the initial value of totalRecv to the size of the first packet. 
+        f.write(data) #Writes the data to the file. 
+        while totalRecv < filesize: #If the totalRecv is less than the filesize enter the while loop.
+            data = sock.recv(1024) 
             totalRecv += len(data)
             f.write(data)
             print (str("{0:.2f}".format((totalRecv/float(filesize))*100)+"% Done"))

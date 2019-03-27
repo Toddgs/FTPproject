@@ -24,40 +24,37 @@ def dir(newDirectory, socket):
     return bytesRecv
 
 def get(command, socket):   
-    
-    cmd = pickle.dumps(command,protocol=2)
+    cmd = pickle.dumps(command,protocol=2) #Pickle and send over the required data, Might be able to combine this line with the next line. 
     socket.send(cmd)
     fileSize = socket.recv(1024)
-    fileSize = pickle.loads(fileSize)
-    f = open('new_' + command[4:], 'wb')
-    sizeRecv = 0
-    print(fileSize)
-    while sizeRecv < fileSize:                              ##################################################
+    fileSize = pickle.loads(fileSize) #Receive and unpickle the filesize data. Might be able to combine this line with the above line to save space.
+    f = open('new_' + command[4:], 'wb') #Create/Open file to be written.
+    sizeRecv = 0 #Set size received to 0 in preperation for receiving data.
+    while sizeRecv < fileSize: #Loop while the filesize is greater than the amount of data received.
         packet = socket.recv(1024)
         sizeRecv += len(packet)
         f.write(packet)
         
 def putFile(socket, cmd): #This function needs to put a file from the local machine to the server.
     tempName = cmd[4:]
-    
     if os.path.isfile(tempName): #Checks to see if the file exists.
-        print('do stuff')
-        cmd = pickle.dumps(cmd)
+        print('do stuff') #Check, remove after code functions.
+        cmd = pickle.dumps(cmd) #Pickle the command to be sent over and send it. Might be able to combine these 2 lines.
         socket.send(cmd)
-        time.sleep(0.1)
-        print(os.path.getsize(tempName))
-        size = pickle.dumps(os.path.getsize(tempName))
+        time.sleep(0.1) #Might be able to get rid of this delay
+        print(os.path.getsize(tempName)) #Check, remove after code functions
+        size = pickle.dumps(os.path.getsize(tempName)) #Pickle and send the data, again, might be able to combine lines.
         socket.send(size)
-        print("size sent")
-        success = socket.recv(1024)
-        print("Received success")
-        if success:
-            print("entered 2nd if")
-            with open(tempName, 'rb') as f:
-                bytesToSend = f.read(1024)
+        print("size sent") #Check
+        success = socket.recv(1024) #Receive if it suceeded or not.
+        print("Received success") #Check
+        if success: #If success is true, continue. Not a great implementation but it works.
+            print("entered if") #Check
+            with open(tempName, 'rb') as f: #Open the file
+                bytesToSend = f.read(1024) #Reads the file to be sent, combine with next?
                 socket.send(bytesToSend)
                 while bytesToSend != '':
-                    bytesToSend = f.read(1024)
+                    bytesToSend = f.read(1024) #Continues to send the file until it's empty, combine with next?
                     socket.send(bytesToSend)
 
     else:
@@ -65,7 +62,7 @@ def putFile(socket, cmd): #This function needs to put a file from the local mach
 
 def multiget(cmd, socket):
     names = cmd.split(' ')
-    for name in names:
+    for name in names: #For each listed name perform a get function for that name.
         get('get ' + name, socket)
 
 def multiput(socket):
