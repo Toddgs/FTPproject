@@ -17,6 +17,7 @@ def ls(socket):
     return bytesRecv
 
 def dir(newDirectory, socket):
+    #
     cmd = pickle.dumps('dir', protocol=2)
     socket.send(cmd)                                  
     data = socket.recv(1024)                           
@@ -113,7 +114,18 @@ def Main():#host = input("Enter the IP address of your server: ") # older versio
                 directory = cd(newDirectory, s)
 
         if commandInput[:3] == "dir":
-            ls(s)
+            #ls(s)
+            lis = ls(s)
+            directories = []
+            notDirectories = []
+            for name in lis:
+               if os.path.isdir(name):
+                   directories += name
+               else:
+                   notDirectories += name
+            directories.sort()
+            notDirectories.sort()
+            print(directories + " " + notDirectories)
  
         if commandInput[:3] == "get":
             get(commandInput, s)

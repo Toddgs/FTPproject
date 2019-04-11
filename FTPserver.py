@@ -37,12 +37,9 @@ def get(name, socket):
 def put(cmd, sock): #Will prompt for a file to transfer to current working directory.
     pickleTrue = pickle.dumps(True) #Prepares a true statement to be sent to the client.
     name = cmd[3:] #Pulls the name from the cmd variable.
-    print(cmd)
     filesize = sock.recv(1024)
     filesize = pickle.loads(filesize)
-    print(filesize)
     if filesize: #If filesize exists, enter this statement.
-        print("entered if")
         sock.send(pickleTrue) #Send a confirmation that the statement passed and we entered the if statement.
         f = open('new_' + name, 'wb')        # makes file with the word new infront 
         data = sock.recv(1024)
@@ -52,15 +49,6 @@ def put(cmd, sock): #Will prompt for a file to transfer to current working direc
             data = sock.recv(1024) 
             totalRecv += len(data)
             f.write(data)
-            print (str("{0:.2f}".format((totalRecv/float(filesize))*100)+"% Done"))
-    #What happens if the file exists?
-    #if os.path.isfile(str.decode(name)):
-     #   null = name
-        #Need to prompt the user to change the name or cancel upload
-        #After we inform them that a file with that name already exists.
-    #else:
-    #    null = name
-        #Need to go ahead and save the file from the user.
 
 #Will allow for multiple gets of several files. Must allow wildcard (*)
 def mget(names, socket):
@@ -93,7 +81,7 @@ def login(socket): #Login function, user must login or be booted.
         print("Username: " + userData[0] + " Password: " + userData[1]) #Prints the users login information.
 
 def main(): #Main function.
-    host = '10.0.0.21' #169.254.145.232' 
+    host = '10.20.148.73' #169.254.145.232' 
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
@@ -111,8 +99,7 @@ def main(): #Main function.
         print(cmd) #Prints the command the user entered. 
         
         if cmd[:2] == 'cd':
-            directory = c.recv(1024) 
-            cd(directory, c)
+             cd(cmd[3:], c)
 
         elif cmd[:2] == 'ls':
             #directory = '' #Current working directory.
