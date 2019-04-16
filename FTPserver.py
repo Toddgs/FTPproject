@@ -1,6 +1,7 @@
 import socket, pickle
 import threading
 import os
+import zlib
 
 #Will require an input to change directories 
 def cd(newDirectory, socket): #Change directory function.
@@ -35,6 +36,7 @@ def get(name, socket, compress, encrypt):
     socket.close #Closes the socket 
 
 def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to current working directory.
+    zobj = zlib.decompressobj()
     pickleTrue = pickle.dumps(True) #Prepares a true statement to be sent to the client.
     name = cmd[3:] #Pulls the name from the cmd variable.
     filesize = sock.recv(1024)
@@ -42,13 +44,29 @@ def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to cu
     if filesize: #If filesize exists, enter this statement.
         sock.send(pickleTrue) #Send a confirmation that the statement passed and we entered the if statement.
         f = open('new_' + name, 'wb')        # makes file with the word new infront 
-        data = sock.recv(1024)
-        totalRecv = len(data) #Sets the initial value of totalRecv to the size of the first packet. 
-        f.write(data) #Writes the data to the file. 
-        while totalRecv < filesize: #If the totalRecv is less than the filesize enter the while loop.
-            data = sock.recv(1024) 
-            totalRecv += len(data)
-            f.write(data)
+        if compress:
+            data = sock.recv(1024)
+            decompressedData = zobj.decompress(data)
+            totalRecv = len(decompressedData) #Sets the initial value of totalRecv to the size of the first packet. 
+            f.write(decompressedData) #Writes the data to the file. 
+            while totalRecv < filesize: #If the totalRecv is less than the filesize enter the while loop.
+                data = sock.recv(1024) 
+                decompressedData = zobj.decompress(data)
+                totalRecv += len(decompressedData)
+                f.write(decompressedData)
+
+        #elif encrypt:
+
+        #elif compress & encrypt:
+
+        else:
+            data = sock.recv(1024)
+            totalRecv = len(data) #Sets the initial value of totalRecv to the size of the first packet. 
+            f.write(data) #Writes the data to the file. 
+            while totalRecv < filesize: #If the totalRecv is less than the filesize enter the while loop.
+                data = sock.recv(1024) 
+                totalRecv += len(data)
+                f.write(data)
 
 #Will allow for multiple gets of several files. Must allow wildcard (*)
 def mget(names, socket, compress, encrypt):
@@ -98,11 +116,11 @@ def main(): #Main function.
     while True:
         cmd = pickle.loads(c.recv(1024)) #Get the cmd data from the client.
         print(cmd) #Prints the command the user entered. 
-        if 'encrypt' in cmd:
-            cmd = cmd[8:] #Cut out the encrypt from the command
+        if 'enc' in cmd:
+            cmd = cmd[4:] #Cut out the encrypt from the command
             encrypt = True #Set the encrypt varialbe to true
-        if 'compress' in cmd:
-            cmd = cmd[9:] #Cut out the compress from the command
+        if 'cmp' in cmd:
+            cmd = cmd[4:] #Cut out the compress from the command
             compress = True #Set the compress variable to true
 
         if cmd[:2] == 'cd': 
@@ -116,6 +134,7 @@ def main(): #Main function.
             get(cmd[4:], c, compress, encrypt)
 
         elif cmd[:3] == 'put':
+            print('entering put...')
             put(cmd, c, compress, encrypt)
 
         elif cmd[:4] == 'mget':
@@ -133,6 +152,8 @@ def main(): #Main function.
         
         #t = threading.Thread(target=RetrFile, args=("retrThread", c))
         #t.start()
+        print(cmd)
+        print('end of loop...')
     s.close()
 
 if __name__ == '__main__':
