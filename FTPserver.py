@@ -83,7 +83,7 @@ def login(socket): #Login function, user must login or be booted.
 def main(): #Main function.
     compress = False
     encrypt = False
-    host = '10.20.148.73' #169.254.145.232' 
+    host = '10.0.0.49' #169.254.145.232' 
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
