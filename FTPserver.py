@@ -81,13 +81,14 @@ def login(socket): #Login function, user must login or be booted.
         print("Username: " + userData[0] + " Password: " + userData[1]) #Prints the users login information.
 
 def main(): #Main function.
+    compress = False
+    encrypt = False
     host = '10.20.148.73' #169.254.145.232' 
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
     cmd = ''
     s.listen(5) #A timeout for the listen. Will likely not need this in the final code.
-    
     print("Server Started.")
     c, addr = s.accept() #Waits and accepts outside connections.
     
@@ -97,24 +98,24 @@ def main(): #Main function.
     while True:
         cmd = pickle.loads(c.recv(1024)) #Get the cmd data from the client.
         print(cmd) #Prints the command the user entered. 
-        
-        if cmd[:2] == 'cd':
+        if 'encrypt' in cmd:
+            cmd = cmd[8:] #Cut out the encrypt from the command
+            encrypt = True #Set the encrypt varialbe to true
+        if 'compress' in cmd:
+            cmd = cmd[9:] #Cut out the compress from the command
+            compress = True #Set the compress variable to true
+
+        if cmd[:2] == 'cd': 
              cd(cmd[3:], c)
 
         elif cmd[:2] == 'ls':
-            #directory = '' #Current working directory.
-            #print("Entering LS")
             ls(c)
-            #print("Returned LS")
 
         elif cmd[:3] == 'get':
-            #filename = c.recv(1024)
             print(cmd[4:])
             get(cmd[4:], c)
 
         elif cmd[:3] == 'put':
-            #fileName = c.recv(1024)
-            #s.send(pickleTrue)
             put(cmd, c)
 
         elif cmd[:4] == 'mget':

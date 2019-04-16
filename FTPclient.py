@@ -4,6 +4,7 @@ import optparse                                                                 
 import string
 import os
 import time
+import zlib
 #import threading                                                               # used in server
 
  
@@ -23,7 +24,7 @@ def dir(socket):
     bytesRecv = pickle.loads(data)                        
     return bytesRecv                                                            #Returns the directory 
 
-def get(command, socket):   
+def get(command, socket, compress, encrypt):   
     cmd = pickle.dumps(command, protocol=2)                                     #Pickle and send over the required data, Might be able to combine this line with the next line. 
     socket.send(cmd)
     fileSize = socket.recv(1024)
@@ -35,9 +36,13 @@ def get(command, socket):
         sizeRecv += len(packet)
         f.write(packet)
         
-def putFile(socket, cmd):                                                       #This function needs to put a file from the local machine to the server.
+def putFile(socket, cmd, compress, encrypt):                                                       #This function needs to put a file from the local machine to the server.
     tempName = cmd[4:]
     if os.path.isfile(tempName):                                                #Checks to see if the file exists.
+        if encrypt:
+            cmd = "encrypt " + cmd
+        if compress:
+            cmd = "compress " + cmd                      
         cmd = pickle.dumps(cmd)                                                 #Pickle the command to be sent over and send it. Might be able to combine these 2 lines.
         socket.send(cmd)
         time.sleep(0.1)                                                         #Might be able to get rid of this delay
@@ -46,6 +51,10 @@ def putFile(socket, cmd):                                                       
         success = socket.recv(1024)                                             #Receive if it suceeded or not.
         if success:                                                             #If success is true, continue. Not a great implementation but it works.
             with open(tempName, 'rb') as f:                                     #Open the file
+                #if encrypt:
+                    #Let's do an RSA Encrpytion.
+                if compress:
+                    f = zlib.compress(f)
                 bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
                 socket.send(bytesToSend)
                 sizeSent = len(bytesToSend)
@@ -56,20 +65,21 @@ def putFile(socket, cmd):                                                       
 
     else:
         print("ERROR: " + tempName + " not valid.")
+    
+    
 
-def multiget(cmd, socket):
+def multiget(cmd, socket, compress, encrypt):
     names = cmd.split(' ')
     for name in names:                                                          #For each listed name perform a get function for that name.
         if name != ' ':
-            get('get ' + name, socket)
+            get('get ' + name, socket, compress, encrypt)
 
-def multiput(cmd, socket):
+def multiput(cmd, socket, compress, encrypt):
     command = cmd[5:]
     names = command.split(' ')
     for name in names:                                                          #For each listed name perform a get function for that name.
         if name != ' ':
-            putFile(socket, 'put ' + name)
-
+            putFile(socket, 'put ' + name, compress, encrypt)
 
 def quit(socket):
     socket.close()
@@ -78,7 +88,9 @@ def Main():
     #host = input("Enter the IP address of your server: ")                      #older versions of python will have to use raw_input
     host = "10.20.148.73"                                                      # Todd's IP address: 10.20.120.124 Wireless, Personal IP: 10.20.120.61 Wired 
     port  = 5000                                                                # actual port
- 
+    encrypt = False
+    compress = False
+
     s = socket.socket()                                                         # creates the "port" we use to connect
 
     s.connect((host,port))                                                      # This connects to the server
@@ -109,20 +121,30 @@ def Main():
             print(ls(s))
  
         if commandInput[:3] == "get":
-            get(commandInput, s)
+            get(commandInput, s, compress, encrypt)
 
         if commandInput[:3] == "put":
-            putFile(s, commandInput)
+            putFile(s, commandInput, compress, encrypt)
 
         if commandInput[:4] == "mget":
-            multiget(commandInput[5:], s)
+            multiget(commandInput[5:], s, compress, encrypt)
 
         if commandInput[:4] == "mput":
-            multiput(commandInput, s)
+            multiput(commandInput, s, compress, encrypt)
 
         if commandInput[:3] == 'lcd':
             dirList = os.listdir(".\\")
             print ('My list:', *dirList, sep='\n')
+
+        if commandInput == 'encrypt':
+            encrypt = True
+
+        if commandInput == 'compress':
+            compress = True
+        
+        if commandInput == 'normal':
+            encrypt = False
+            compress = False
 
         if commandInput[:4] == "quit":
             quit(s)
