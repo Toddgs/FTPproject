@@ -2,6 +2,10 @@ import socket, pickle
 import threading
 import os
 import zlib
+import Cryptodome
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Cipher import AES, PKCS1_OAEP
 
 #Will require an input to change directories 
 def cd(newDirectory, socket): #Change directory function.
@@ -55,10 +59,34 @@ def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to cu
                 totalRecv += len(decompressedData)
                 f.write(decompressedData)
 
-        #elif encrypt:
-
-        #elif compress & encrypt:
-
+        elif encrypt:
+            private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
+            session_key = get_random_bytes(16) #Gets some random numbers.
+            cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key
+            enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key
+            cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
+            ciphertext, tag = cipher_aes.encrypt_and_digest(data)
+            [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+        
+        elif compress & encrypt:
+            private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
+            session_key = get_random_bytes(16) #Gets some random numbers.
+            cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key.
+            enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key.
+            cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data.
+            ciphertext, tag = cipher_aes.encrypt_and_digest(data)
+            [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+            
+            data = sock.recv(1024)
+            decompressedData = zobj.decompress(data)
+            totalRecv = len(decompressedData) #Sets the initial value of totalRecv to the size of the first packet. 
+            f.write(decompressedData) #Writes the data to the file. 
+            while totalRecv < filesize: #If the totalRecv is less than the filesize enter the while loop.
+                data = sock.recv(1024) 
+                decompressedData = zobj.decompress(data)
+                totalRecv += len(decompressedData)
+                f.write(decompressedData)
+        
         else:
             data = sock.recv(1024)
             totalRecv = len(data) #Sets the initial value of totalRecv to the size of the first packet. 
