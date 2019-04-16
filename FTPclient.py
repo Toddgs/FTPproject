@@ -6,6 +6,9 @@ import os
 import time
 import zlib
 import Cryptodome
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Cipher import AES, PKCS1_OAEP
 #import threading                                                               # used in server
 
  
@@ -66,7 +69,14 @@ def putFile(socket, cmd, compress, encrypt):                                    
                         socket.send(compressedBytes)
                         sizeSent += len(bytesToSend)
                     
-                #elif encrypt:
+                elif encrypt:
+                    private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
+                    session_key = get_random_bytes(16) #Gets some random numbers.
+                    cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key
+                    enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key
+                    cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
+                    #ciphertext, tag = cipher_aes.encrypt_and_digest(data)
+                    #[ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
                 #elif compress & encrypt:
                 else:
                     bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
@@ -81,13 +91,23 @@ def putFile(socket, cmd, compress, encrypt):                                    
     else:
         print("ERROR: " + tempName + " not valid.")
     
-    
-
 def multiget(cmd, socket, compress, encrypt):
-    names = cmd.split(' ')
-    for name in names:                                                          #For each listed name perform a get function for that name.
-        if name != ' ':
-            get('get ' + name, socket, compress, encrypt)
+    if '*.' in cmd:
+        fileList = ls(socket) #A list of every file in the current directory.
+        #getList = [] #List that will be used to store the names of files that we will get.
+        for name in fileList: #Check every name in the file list
+            if cmd[1:] in name:
+                get(name, socket, compress, encrypt)
+                
+    #elif '.*' in cmd:
+        #DO OTHER STUFF
+    #elif '*.*' in cmd:
+        #DO LAST STUFF
+    else:
+        names = cmd.split(' ')
+        for name in names:                                                          #For each listed name perform a get function for that name.
+            if name != ' ':
+                get('get ' + name, socket, compress, encrypt)
 
 def multiput(cmd, socket, compress, encrypt):
     command = cmd[5:]

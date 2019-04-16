@@ -21,7 +21,7 @@ def dir(newDirectory, socket):
     if os.path.isdir(newDirectory): #Checks to see if the directory exists
         os.chdir(newDirectory) #Changes to the specified directory if it exists.
     else:
-        socket.send("ERROR:Not a diretory") #Sends an error message if the directory does not exist.
+        socket.send("ERROR:Not a directory") #Sends an error message if the directory does not exist.
 
 #Will take an input to retrieve a file. 
 def get(name, socket, compress, encrypt):
@@ -60,22 +60,38 @@ def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to cu
                 f.write(decompressedData)
 
         elif encrypt:
-            private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
-            session_key = get_random_bytes(16) #Gets some random numbers.
-            cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key
-            enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key
-            cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
-            ciphertext, tag = cipher_aes.encrypt_and_digest(data)
-            [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+            file_in = open("encrypted_data.bin", "rb")
+
+            private_key = RSA.import_key(open("private.pem").read())
+
+            enc_session_key, nonce, tag, ciphertext = \
+            [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+
+            # Decrypt the session key with the private RSA key
+            cipher_rsa = PKCS1_OAEP.new(private_key)
+            session_key = cipher_rsa.decrypt(enc_session_key)
+
+            # Decrypt the data with the AES session key
+            cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+            data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+            print(data.decode("utf-8"))
         
         elif compress & encrypt:
-            private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
-            session_key = get_random_bytes(16) #Gets some random numbers.
-            cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key.
-            enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key.
-            cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data.
-            ciphertext, tag = cipher_aes.encrypt_and_digest(data)
-            [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+            file_in = open("encrypted_data.bin", "rb")
+
+            private_key = RSA.import_key(open("private.pem").read())
+
+            enc_session_key, nonce, tag, ciphertext = \
+            [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+
+            # Decrypt the session key with the private RSA key
+            cipher_rsa = PKCS1_OAEP.new(private_key)
+            session_key = cipher_rsa.decrypt(enc_session_key)
+
+            # Decrypt the data with the AES session key
+            cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+            data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+            print(data.decode("utf-8"))
             
             data = sock.recv(1024)
             decompressedData = zobj.decompress(data)
