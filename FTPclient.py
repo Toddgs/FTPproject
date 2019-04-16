@@ -86,7 +86,7 @@ def quit(socket):
 
 def Main():
     #host = input("Enter the IP address of your server: ")                      #older versions of python will have to use raw_input
-    host = "10.20.148.73"                                                      # Todd's IP address: 10.20.120.124 Wireless, Personal IP: 10.20.120.61 Wired 
+    host = "10.0.0.49"                                                      # Todd's IP address: 10.20.120.124 Wireless, Personal IP: 10.20.120.61 Wired 
     port  = 5000                                                                # actual port
     encrypt = False
     compress = False

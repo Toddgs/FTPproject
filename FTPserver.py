@@ -19,7 +19,7 @@ def dir(newDirectory, socket):
         socket.send("ERROR:Not a diretory") #Sends an error message if the directory does not exist.
 
 #Will take an input to retrieve a file. 
-def get(name, socket):
+def get(name, socket, compress, encrypt):
     if os.path.isfile(name):
         size = pickle.dumps(os.path.getsize(name)) #takes the size of the named file and puts it into a pickled format.
         socket.send(size)
@@ -34,7 +34,7 @@ def get(name, socket):
         socket.send(errorMsg) #Sends an error message.
     socket.close #Closes the socket 
 
-def put(cmd, sock): #Will prompt for a file to transfer to current working directory.
+def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to current working directory.
     pickleTrue = pickle.dumps(True) #Prepares a true statement to be sent to the client.
     name = cmd[3:] #Pulls the name from the cmd variable.
     filesize = sock.recv(1024)
@@ -51,10 +51,10 @@ def put(cmd, sock): #Will prompt for a file to transfer to current working direc
             f.write(data)
 
 #Will allow for multiple gets of several files. Must allow wildcard (*)
-def mget(names, socket):
+def mget(names, socket, compress, encrypt):
     namesDict = names.split() #Seperate out all the names for the files
 
-def mput(names, socket): #Will prompt user to send multiple files to the CWD
+def mput(names, socket, compress, encrypt): #Will prompt user to send multiple files to the CWD
     namesDict = names.split() #split the names into a dictionary so that we can easily setup the files.
     for name in namesDict: #For every name in the dictionary DO THE THING
         if os.path.isfile(name): #Need to prompt the user about the error with the filename.
@@ -113,18 +113,18 @@ def main(): #Main function.
 
         elif cmd[:3] == 'get':
             print(cmd[4:])
-            get(cmd[4:], c)
+            get(cmd[4:], c, compress, encrypt)
 
         elif cmd[:3] == 'put':
-            put(cmd, c)
+            put(cmd, c, compress, encrypt)
 
         elif cmd[:4] == 'mget':
             fileNames = c.recv(1024)
-            mget(fileNames, c)
+            mget(fileNames, c, compress, encrypt)
 
         elif cmd[:4] == 'mput':
             fileName = c.recv(1024)
-            mput(fileName, c)
+            mput(fileName, c, compress, encrypt)
 
         
 
