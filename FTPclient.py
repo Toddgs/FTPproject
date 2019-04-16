@@ -38,11 +38,12 @@ def get(command, socket, compress, encrypt):
         
 def putFile(socket, cmd, compress, encrypt):                                                       #This function needs to put a file from the local machine to the server.
     tempName = cmd[4:]
+    zobj = zlib.compressobj()
     if os.path.isfile(tempName):                                                #Checks to see if the file exists.
         if encrypt:
-            cmd = "encrypt " + cmd
+            cmd = "enc " + cmd
         if compress:
-            cmd = "compress " + cmd                      
+            cmd = "cmp " + cmd                      
         cmd = pickle.dumps(cmd)                                                 #Pickle the command to be sent over and send it. Might be able to combine these 2 lines.
         socket.send(cmd)
         time.sleep(0.1)                                                         #Might be able to get rid of this delay
@@ -54,14 +55,27 @@ def putFile(socket, cmd, compress, encrypt):                                    
                 #if encrypt:
                     #Let's do an RSA Encrpytion.
                 if compress:
-                    f = zlib.compress(f)
-                bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
-                socket.send(bytesToSend)
-                sizeSent = len(bytesToSend)
-                while sizeSent < os.path.getsize(tempName):
-                    bytesToSend = f.read(1024)                                  #Continues to send the file until it's empty, combine with next?
+                    bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
+                    compressedBytes = zobj.compress(bytesToSend)
+                    socket.send(compressedBytes)
+                    sizeSent = len(bytesToSend)
+                    while sizeSent < os.path.getsize(tempName):
+                        bytesToSend = f.read(1024)                                  #Continues to send the file until it's empty, combine with next?
+                        compressedBytes = zobj.compress(bytesToSend)
+                        socket.send(compressedBytes)
+                        sizeSent += len(bytesToSend)
+                    
+                #elif encrypt:
+                #elif compress & encrypt:
+                else:
+                    bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
                     socket.send(bytesToSend)
-                    sizeSent += len(bytesToSend)
+                    sizeSent = len(bytesToSend)
+                    while sizeSent < os.path.getsize(tempName):
+                        bytesToSend = f.read(1024)                                  #Continues to send the file until it's empty, combine with next?
+                        socket.send(bytesToSend)
+                        sizeSent += len(bytesToSend)
+                    
 
     else:
         print("ERROR: " + tempName + " not valid.")
