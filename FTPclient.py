@@ -6,6 +6,7 @@ import os
 import time
 import zlib
 import Cryptodome
+import getpass
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -92,17 +93,29 @@ def putFile(socket, cmd, compress, encrypt):                                    
         print("ERROR: " + tempName + " not valid.")
     
 def multiget(cmd, socket, compress, encrypt):
-    if '*.' in cmd:
+    print(cmd)
+    if '*.*' in cmd:
+        fileList = ls(socket)
+        for name in fileList:
+            print(name)
+            if '.' in name[1:]:
+                print("get")
+                get('get ' + name, socket, compress, encrypt)
+
+    elif '*.' in cmd:
         fileList = ls(socket) #A list of every file in the current directory.
-        #getList = [] #List that will be used to store the names of files that we will get.
         for name in fileList: #Check every name in the file list
             if cmd[1:] in name:
-                get(name, socket, compress, encrypt)
+                get('get ' + name, socket, compress, encrypt)
                 
-    #elif '.*' in cmd:
-        #DO OTHER STUFF
-    #elif '*.*' in cmd:
-        #DO LAST STUFF
+    elif '.*' in cmd:
+        fileList = ls(socket) #A list of every file in the current directory.
+        for name in fileList: #Check every name in the file list
+            if cmd[:-2] in name:
+                get('get ' + name, socket, compress, encrypt)
+        
+    
+
     else:
         names = cmd.split(' ')
         for name in names:                                                          #For each listed name perform a get function for that name.
@@ -136,7 +149,7 @@ def Main():
             loginEmail = input("Please enter your e-mail: ")
             loginInfo = [loginName, loginEmail]
         else:
-            password = input("Please enter your password: ")
+            password = getpass.win_getpass("Please enter your password: ")
             loginInfo = [loginName, password]
         data = pickle.dumps(loginInfo, protocol=2)
         s.send(data)
