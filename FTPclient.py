@@ -10,7 +10,6 @@ import getpass #Used to hide console input for the password.
 from Cryptodome.PublicKey import RSA #RSA is an encryption algorithm.
 from Cryptodome.Random import get_random_bytes #occasionally you need random bytes for stuff related to encryption.
 from Cryptodome.Cipher import AES, PKCS1_OAEP #Advanced Encryption Standard stuff
-#import threading                                                               # used in server
 
 def cd(command, socket):                            
     socket.send(pickle.dumps(command, protocol=2))
@@ -117,11 +116,31 @@ def multiget(cmd, socket, compress, encrypt):
                 get('get ' + name, socket, compress, encrypt)
 
 def multiput(cmd, socket, compress, encrypt):
-    command = cmd[5:]
-    names = command.split(' ')
-    for name in names:                                                          #For each listed name perform a get function for that name.
-        if name != ' ':
-            putFile(socket, 'put ' + name, compress, encrypt)
+    
+    if '*.*' in cmd: #Checks to find specific command
+        fileList = os.listdir('..') #If found gets every file from the server in the current directory.  
+        for name in fileList:
+            if '.' in name[1:]: #Hidden directories start with a '.', this ensures we don't try and get directories.
+                putFile('put ' + name, socket, compress, encrypt)
+
+    elif '*.' in cmd:
+        fileList = os.listdir('..') #A list of every file in the current directory.
+        for name in fileList: #Check every name in the file list
+            if cmd[1:] in name:
+                putFile('put ' + name, socket, compress, encrypt)
+                
+    elif '.*' in cmd:
+        fileList = os.listdir('..') #A list of every file in the current directory.
+        for name in fileList: #Check every name in the file list
+            if cmd[:-2] in name:
+                putFile('put ' + name, socket, compress, encrypt)
+
+    else:            
+        command = cmd[5:]
+        names = command.split(' ')
+        for name in names:                                                          #For each listed name perform a get function for that name.
+            if name != ' ':
+                putFile(socket, 'put ' + name, compress, encrypt)
 
 def quit(socket):
     socket.close()

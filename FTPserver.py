@@ -34,7 +34,6 @@ def get(name, socket, compress, encrypt):
                 socket.send(bytesToSend)
                 bytesToSend = f.read(1024) #If not, sends more data.
     else:
-        print("ERROR MSG")
         errorMsg = pickle.dumps("ERROR:File doesn't exist")
         socket.send(errorMsg) #Sends an error message.
     socket.close #Closes the socket 
@@ -112,16 +111,6 @@ def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to cu
                 totalRecv += len(data)
                 f.write(data)
 
-#Will allow for multiple gets of several files. Must allow wildcard (*)
-def mget(names, socket, compress, encrypt):
-    namesDict = names.split() #Seperate out all the names for the files
-
-def mput(names, socket, compress, encrypt): #Will prompt user to send multiple files to the CWD
-    namesDict = names.split() #split the names into a dictionary so that we can easily setup the files.
-    for name in namesDict: #For every name in the dictionary DO THE THING
-        if os.path.isfile(name): #Need to prompt the user about the error with the filename.
-            socket.send("ERROR:") #Error message
-
 def quit(socket): #Exits the program and closes the connection.
     socket.send("GOODBYE") #Tell the client that we are closing the connection.
     socket.close #Close the connection.
@@ -149,17 +138,12 @@ def main(): #Main function.
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
-    cmd = ''
-    s.listen(5) #A timeout for the listen. Will likely not need this in the final code.
-    print("Server Started.")
+    #s.listen(5) #A timeout for the listen. Will likely not need this in the final code.
     c, addr = s.accept() #Waits and accepts outside connections.
-    
-    print("client connected ip:<" + str(addr) + ">") #Prints the connecting IP address.
     login(c) #Go into the login function. If they fail they will be logged out.
     
     while True:
         cmd = pickle.loads(c.recv(1024)) #Get the cmd data from the client.
-        print(cmd) #Prints the command the user entered. 
         if 'enc' in cmd:
             cmd = cmd[4:] #Cut out the encrypt from the command
             encrypt = True #Set the encrypt varialbe to true
@@ -174,31 +158,13 @@ def main(): #Main function.
             ls(c)
 
         elif cmd[:3] == 'get':
-            print(cmd[4:])
             get(cmd[4:], c, compress, encrypt)
 
         elif cmd[:3] == 'put':
-            print('entering put...')
             put(cmd, c, compress, encrypt)
-
-        elif cmd[:4] == 'mget':
-            fileNames = c.recv(1024)
-            mget(fileNames, c, compress, encrypt)
-
-        elif cmd[:4] == 'mput':
-            fileName = c.recv(1024)
-            mput(fileName, c, compress, encrypt)
-
-        
 
         elif cmd[:4] == 'quit':
             quit(s) 
-        
-        #t = threading.Thread(target=RetrFile, args=("retrThread", c))
-        #t.start()
-        print(cmd)
-        print('end of loop...')
-    s.close()
 
 if __name__ == '__main__':
     main()
