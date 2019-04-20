@@ -1,18 +1,16 @@
 import socket
-import pickle
+import pickle #Used to store and transfer different data types. 
 import optparse                                                                 # This is used to parse console input
 import string
-import os
+import os #Used to get information from the OS
 import time
-import zlib
-import Cryptodome
-import getpass
-from Cryptodome.PublicKey import RSA
-from Cryptodome.Random import get_random_bytes
-from Cryptodome.Cipher import AES, PKCS1_OAEP
+import zlib #Used in Compression
+import Cryptodome #Used for encryption (NOT INCLUDED IN THE STANDARD LIBRARY)
+import getpass #Used to hide console input for the password.
+from Cryptodome.PublicKey import RSA #RSA is an encryption algorithm.
+from Cryptodome.Random import get_random_bytes #occasionally you need random bytes for stuff related to encryption.
+from Cryptodome.Cipher import AES, PKCS1_OAEP #Advanced Encryption Standard stuff
 #import threading                                                               # used in server
-
- 
 
 def cd(command, socket):                            
     socket.send(pickle.dumps(command, protocol=2))
@@ -57,8 +55,6 @@ def putFile(socket, cmd, compress, encrypt):                                    
         success = socket.recv(1024)                                             #Receive if it suceeded or not.
         if success:                                                             #If success is true, continue. Not a great implementation but it works.
             with open(tempName, 'rb') as f:                                     #Open the file
-                #if encrypt:
-                    #Let's do an RSA Encrpytion.
                 if compress:
                     bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
                     compressedBytes = zobj.compress(bytesToSend)
@@ -78,7 +74,9 @@ def putFile(socket, cmd, compress, encrypt):                                    
                     cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
                     #ciphertext, tag = cipher_aes.encrypt_and_digest(data)
                     #[ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+                
                 #elif compress & encrypt:
+                
                 else:
                     bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
                     socket.send(bytesToSend)
@@ -94,12 +92,10 @@ def putFile(socket, cmd, compress, encrypt):                                    
     
 def multiget(cmd, socket, compress, encrypt):
     print(cmd)
-    if '*.*' in cmd:
-        fileList = ls(socket)
+    if '*.*' in cmd: #Checks to find specific command
+        fileList = ls(socket) #If found gets every file from the server in the current directory.  
         for name in fileList:
-            print(name)
-            if '.' in name[1:]:
-                print("get")
+            if '.' in name[1:]: #Hidden directories start with a '.', this ensures we don't try and get directories.
                 get('get ' + name, socket, compress, encrypt)
 
     elif '*.' in cmd:
@@ -114,8 +110,6 @@ def multiget(cmd, socket, compress, encrypt):
             if cmd[:-2] in name:
                 get('get ' + name, socket, compress, encrypt)
         
-    
-
     else:
         names = cmd.split(' ')
         for name in names:                                                          #For each listed name perform a get function for that name.
