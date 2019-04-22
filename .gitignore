@@ -1,13 +1,7 @@
-new_ new_snort_manual.pdf
-Clean Code - A Handbook of Agile Software Craftsmanship.pdf
-snort_manual.pdf
-new_ new_todd.txt
-new_snort_manual.pdf
-new_todd.txt
-.vscode/settings.json
-kitten.jpg
-new_ Alysa.txt
-new_ TODD.txt
-Alysa.txt
-TODD.txt
+#DON'T PUBLISH PRIVATE KEYS TO GIT
 private.pem
+
+#Exclude non-code from the project.
+*.txt
+*.pdf
+*.jpg

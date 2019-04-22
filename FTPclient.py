@@ -27,17 +27,86 @@ def dir(socket):
     return bytesRecv                                                            #Returns the directory 
 
 def get(command, socket, compress, encrypt):   
-    cmd = pickle.dumps(command, protocol=2)                                     #Pickle and send over the required data, Might be able to combine this line with the next line. 
-    socket.send(cmd)
+    
     fileSize = socket.recv(1024)
     fileSize = pickle.loads(fileSize)                                           #Receive and unpickle the filesize data. Might be able to combine this line with the above line to save space.
+    zobj = zlib.decompressobj()
     f = open('new_' + command[4:], 'wb')                                        #Create/Open file to be written.
     sizeRecv = 0                                                                #Set size received to 0 in preperation for receiving data.
-    while sizeRecv < fileSize:                                                  #Loop while the filesize is greater than the amount of data received.
-        packet = socket.recv(1024)
-        sizeRecv += len(packet)
-        f.write(packet)
+    
+    if encrypt:
+            cmd = "enc " + command
+    if compress:
+            cmd = "cmp " + command
+
+    cmd = pickle.dumps(command, protocol=2)                                     #Pickle and send over the required data, Might be able to combine this line with the next line. 
+    socket.send(cmd)
+
+    if compress:
+        tempCompressFile = open('tempCompressFile.bin', 'wb')
+        zobj = zlib.decompressobj()
+        while sizeRecv < fileSize:                                                  #Loop while the filesize is greater than the amount of data received.
+            packet = socket.recv(1024)
+            sizeRecv += len(packet)
+            tempCompressFile.write(packet)
+        f.write(zobj.decompress(tempCompressFile))
+        os.remove('tempCompressFile.bin')
+
+    elif encrypt:
+        tempEncryptFile = open('tempFile.bin', 'wb')
+        while sizeRecv < fileSize:                                                  #Loop while the filesize is greater than the amount of data received.
+            packet = socket.recv(1024)
+            sizeRecv += len(packet)
+            tempEncryptFile.write(packet)
+        private_key = RSA.import_key(open("private.pem").read())
+
+        enc_session_key, nonce, tag, ciphertext = \
+        [ tempEncryptFile.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+
+        # Decrypt the session key with the private RSA key
+        cipher_rsa = PKCS1_OAEP.new(private_key)
+        session_key = cipher_rsa.decrypt(enc_session_key)
+
+        # Decrypt the data with the AES session key
+        cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+        data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+        f.write(data)
+
+    elif compress & encrypt:
+        tempCompressFile = open('tempCompressFile.bin', 'wb')
+        tempEncryptFile = open('tempFile.bin', 'wb')
+        zobj = zlib.decompressobj()
+        while sizeRecv < fileSize:                                                  #Loop while the filesize is greater than the amount of data received.
+            packet = socket.recv(1024)
+            sizeRecv += len(packet)
+            tempCompressFile.write(packet)
+
         
+
+        private_key = RSA.import_key(open("private.pem").read())
+
+        enc_session_key, nonce, tag, ciphertext = \
+        [ tempEncryptFile.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+
+        # Decrypt the session key with the private RSA key
+        cipher_rsa = PKCS1_OAEP.new(private_key)
+        session_key = cipher_rsa.decrypt(enc_session_key)
+
+        # Decrypt the data with the AES session key
+        cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+        data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+        f.write(data)
+        
+
+        os.remove('tempCompressFile.bin')
+        os.remove('tempFile.bin')
+
+    else:
+        while sizeRecv < fileSize:                                                  #Loop while the filesize is greater than the amount of data received.
+            packet = socket.recv(1024)
+            sizeRecv += len(packet)
+            f.write(packet)
+            
 def putFile(socket, cmd, compress, encrypt):                                                       #This function needs to put a file from the local machine to the server.
     tempName = cmd[4:]
     zobj = zlib.compressobj()
@@ -66,16 +135,44 @@ def putFile(socket, cmd, compress, encrypt):                                    
                         sizeSent += len(bytesToSend)
                     
                 elif encrypt:
-                    private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
+                    clearData = f.read()
+                    public_key = RSA.import_key(open("public.pem").read()) #Reads in the private key.
                     session_key = get_random_bytes(16) #Gets some random numbers.
-                    cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key
+                    cipher_rsa = PKCS1_OAEP.new(public_key) #Encrypt the session key with the private key
                     enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key
                     cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
-                    #ciphertext, tag = cipher_aes.encrypt_and_digest(data)
-                    #[ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
-                
-                #elif compress & encrypt:
-                
+                    ciphertext, tag = cipher_aes.encrypt_and_digest(clearData)
+                    temp_Encrypt_File = open('tempFile', 'wb')
+                    [ temp_Encrypt_File.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+
+                    bytesToSend = temp_Encrypt_File.read(1024)                                      #Reads the file to be sent, combine with next?
+                    socket.send(bytesToSend)
+                    sizeSent = len(bytesToSend)
+                    while sizeSent < os.path.getsize(temp_Encrypt_File):
+                        bytesToSend = temp_Encrypt_File.read(1024)                                  #Continues to send the file until it's empty, combine with next?
+                        socket.send(bytesToSend)
+                        sizeSent += len(bytesToSend)
+                    
+                elif compress & encrypt:
+                    clearData = f.read()
+                    public_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
+                    session_key = get_random_bytes(16) #Gets some random numbers.
+                    cipher_rsa = PKCS1_OAEP.new(public_key) #Encrypt the session key with the private key
+                    enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key
+                    cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
+                    ciphertext, tag = cipher_aes.encrypt_and_digest(clearData)
+                    temp_Encrypt_File = open('tempFile', 'wb')
+                    [ temp_Encrypt_File.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+                    bytesToSend = temp_Encrypt_File.read(1024)                                      #Reads the file to be sent, combine with next?
+                    compressedBytes = zobj.compress(bytesToSend)
+                    socket.send(compressedBytes)
+                    sizeSent = len(bytesToSend)
+                    while sizeSent < os.path.getsize(temp_Encrypt_File):
+                        bytesToSend = f.read(1024)                                  #Continues to send the file until it's empty, combine with next?
+                        compressedBytes = zobj.compress(bytesToSend)
+                        socket.send(compressedBytes)
+                        sizeSent += len(bytesToSend)
+
                 else:
                     bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
                     socket.send(bytesToSend)
@@ -85,7 +182,6 @@ def putFile(socket, cmd, compress, encrypt):                                    
                         socket.send(bytesToSend)
                         sizeSent += len(bytesToSend)
                     
-
     else:
         print("ERROR: " + tempName + " not valid.")
     
@@ -199,13 +295,16 @@ def Main():
 
         if commandInput == 'encrypt':
             encrypt = True
+            print('Encryption on')
 
         if commandInput == 'compress':
             compress = True
+            print('Compression on')
         
         if commandInput == 'normal':
             encrypt = False
             compress = False
+            print('Encryption and Compression off.')
 
         if commandInput[:4] == "quit":
             quit(s)

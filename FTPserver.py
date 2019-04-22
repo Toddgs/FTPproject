@@ -26,13 +26,76 @@ def dir(newDirectory, socket):
 #Will take an input to retrieve a file. 
 def get(name, socket, compress, encrypt):
     if os.path.isfile(name):
-        size = pickle.dumps(os.path.getsize(name)) #takes the size of the named file and puts it into a pickled format.
-        socket.send(size)
+
         with open(name, 'rb') as f: #Opens the file with the specified name
-            bytesToSend = f.read(1024) #Reads the first section of data to be sent.
-            while bytesToSend != b'': #Checks to see if the data is empty
+            if encrypt:
+                clearData = f.read()
+                private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
+                session_key = get_random_bytes(16) #Gets some random numbers.
+                cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key
+                enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key
+                cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
+                ciphertext, tag = cipher_aes.encrypt_and_digest(clearData)
+                temp_Encrypt_File = open('tempFile', 'wb')
+                [ temp_Encrypt_File.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+
+                size = pickle.dumps(os.path.getsize(temp_Encrypt_File)) #takes the size of the named file and puts it into a pickled format.
+                socket.send(size)
+                bytesToSend = temp_Encrypt_File.read(1024) #Reads the first section of data to be sent.
+                while bytesToSend != b'': #Checks to see if the data is empty
+                    socket.send(bytesToSend)
+                    bytesToSend = temp_Encrypt_File.read(1024) #If not, sends more data.
+
+                os.remove('tempFile')
+            
+            elif compress:
+                zobj = zlib.compressobj()
+                bytesToSend = f.read(1024)                                      #Reads the file to be sent, combine with next?
+                compressedBytes = zobj.compress(bytesToSend)
+                socket.send(compressedBytes)
+                sizeSent = len(bytesToSend)
+                while sizeSent < os.path.getsize(name):
+                    bytesToSend = f.read(1024)                                  #Continues to send the file until it's empty, combine with next?
+                    compressedBytes = zobj.compress(bytesToSend)
+                    socket.send(compressedBytes)
+                    sizeSent += len(bytesToSend)
+
+            elif encrypt & compress:
+                clearData = f.read()
+                private_key = RSA.import_key(open("private.pem").read()) #Reads in the private key.
+                session_key = get_random_bytes(16) #Gets some random numbers.
+                cipher_rsa = PKCS1_OAEP.new(private_key) #Encrypt the session key with the private key
+                enc_session_key = cipher_rsa.encrypt(session_key) #Encrypt the session key
+                cipher_aes = AES.new(session_key, AES.MODE_EAX) #Encrypt the session data. 
+                ciphertext, tag = cipher_aes.encrypt_and_digest(clearData)
+                temp_Encrypt_File = open('tempFile', 'wb')
+                [ temp_Encrypt_File.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+
+                zobj = zlib.compressobj()
+                temp_Compress_File = open('tempCompressFile', 'wb')
+                temp_Compress_File.write(zobj.compress(temp_Encrypt_File.read()))
+
+                size = pickle.dumps(os.path.getsize(temp_Compress_File)) #takes the size of the named file and puts it into a pickled format.
+                
+                bytesToSend = temp_Compress_File.read(1024)                                      #Reads the file to be sent, combine with next?
+                #compressedBytes = zobj.compress(bytesToSend)
                 socket.send(bytesToSend)
-                bytesToSend = f.read(1024) #If not, sends more data.
+                sizeSent = len(bytesToSend)
+                while sizeSent < os.path.getsize(temp_Compress_File):
+                    bytesToSend = temp_Compress_File.read(1024)                                  #Continues to send the file until it's empty, combine with next?
+                    #compressedBytes = zobj.compress(bytesToSend)
+                    socket.send(bytesToSend)
+                    sizeSent += len(bytesToSend)
+                os.remove('tempFile')
+                os.remove('tempCompressFile')
+
+            else:
+                size = pickle.dumps(os.path.getsize(name)) #takes the size of the named file and puts it into a pickled format.
+                socket.send(size)
+                bytesToSend = f.read(1024) #Reads the first section of data to be sent.
+                while bytesToSend != b'': #Checks to see if the data is empty
+                    socket.send(bytesToSend)
+                    bytesToSend = f.read(1024) #If not, sends more data.
     else:
         errorMsg = pickle.dumps("ERROR:File doesn't exist")
         socket.send(errorMsg) #Sends an error message.

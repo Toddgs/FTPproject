@@ -10,5 +10,6 @@
     "python.unitTest.nosetestsEnabled": false,
     "python.unitTest.unittestEnabled": false,
     "python.unitTest.promptToConfigure": false,
-    "python.pythonPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\Python36_64\\python.exe"
+    "python.pythonPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\Python36_64\\python.exe",
+    "python.linting.pylintEnabled": true
 }
