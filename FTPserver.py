@@ -16,17 +16,14 @@ def ls(s): #List all files and directories contained in current working director
     data_string = pickle.dumps(os.listdir(".\\")) #Takes the data and uses the pickle library to serialize it into the data_string variable.
     s.send(data_string) #Sends the serialized data string.
 
-#Will require an input to change directories
-def dir(newDirectory, socket):
+def dir(newDirectory, socket): #Will require an input to change directories
     if os.path.isdir(newDirectory): #Checks to see if the directory exists
         os.chdir(newDirectory) #Changes to the specified directory if it exists.
     else:
         socket.send("ERROR:Not a directory") #Sends an error message if the directory does not exist.
 
-#Will take an input to retrieve a file. 
-def get(name, socket, compress, encrypt):
+def get(name, socket, compress, encrypt): #Will take an input to retrieve a file. 
     if os.path.isfile(name):
-
         with open(name, 'rb') as f: #Opens the file with the specified name
             if encrypt:
                 clearData = f.read()
@@ -136,11 +133,11 @@ def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to cu
             # Decrypt the data with the AES session key
             cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
             data = cipher_aes.decrypt_and_verify(ciphertext, tag)
-            print(data.decode("utf-8"))
+            f.write(data.decode("utf-8"))
         
         elif compress & encrypt:
             file_in = open("encrypted_data.bin", "rb")
-
+            tempEncryptFile = open("tempFile.bin", 'wb')
             private_key = RSA.import_key(open("private.pem").read())
 
             enc_session_key, nonce, tag, ciphertext = \
@@ -153,7 +150,7 @@ def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to cu
             # Decrypt the data with the AES session key
             cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
             data = cipher_aes.decrypt_and_verify(ciphertext, tag)
-            print(data.decode("utf-8"))
+            tempEncryptFile.write(data.decode("utf-8"))
             
             data = sock.recv(1024)
             decompressedData = zobj.decompress(data)
@@ -197,11 +194,11 @@ def login(socket): #Login function, user must login or be booted.
 def main(): #Main function.
     compress = False
     encrypt = False
-    host = '10.0.0.49' #169.254.145.232' 
+    host = '10.20.148.36' #169.254.145.232' 
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
-    #s.listen(5) #A timeout for the listen. Will likely not need this in the final code.
+    s.listen(5) #A timeout for the listen. Will likely not need this in the final code.
     c, addr = s.accept() #Waits and accepts outside connections.
     login(c) #Go into the login function. If they fail they will be logged out.
     
