@@ -101,7 +101,7 @@ def get(name, socket, compress, encrypt): #Will take an input to retrieve a file
 def put(cmd, sock, compress, encrypt): #Will prompt for a file to transfer to current working directory.
     zobj = zlib.decompressobj()
     pickleTrue = pickle.dumps(True) #Prepares a true statement to be sent to the client.
-    name = cmd[3:] #Pulls the name from the cmd variable.
+    name = cmd[4:] #Pulls the name from the cmd variable.
     filesize = sock.recv(1024)
     filesize = pickle.loads(filesize)
     if filesize: #If filesize exists, enter this statement.
@@ -194,7 +194,7 @@ def login(socket): #Login function, user must login or be booted.
 def main(): #Main function.
     compress = False
     encrypt = False
-    host = '10.20.148.36' #169.254.145.232' 
+    host = '10.20.150.132' #169.254.145.232' 
     port = 5000
     s = socket.socket() #Create a socket object.
     s.bind((host,port)) #Bind the information to the socket object.
